@@ -1,0 +1,203 @@
+import datetime
+import json
+import os
+import random
+
+ARCHIVO_MATERIALES = "materiales.json"
+ARCHIVO_REGISTRO = "reciclaje_registro.json"
+
+#MATERIALES
+def cargar_materiales():
+    if os.path.exists(ARCHIVO_MATERIALES):
+        with open(ARCHIVO_MATERIALES, "r") as f:
+            return json.load(f)
+
+    # fallback por si no existe archivo
+    return {
+        "botella_plastico_agua": {"tipo": "Plástico", "numero": 1, "reciclaje": "comun"},
+        "botella_leche": {"tipo": "Plástico", "numero": 2, "reciclaje": "comun"},
+        "tapón_botella": {"tipo": "Plástico", "numero": 5, "reciclaje": "comun"},
+        "tupper": {"tipo": "Plástico", "numero": 5, "reciclaje": "comun"},
+        "lata_bebida": {"tipo": "Metal", "numero": None, "reciclaje": "comun"},
+        "lata_atun": {"tipo": "Metal", "numero": None, "reciclaje": "comun"},
+        "botella_vidrio": {"tipo": "Vidrio", "numero": None, "reciclaje": "comun"},
+        "frasco_vidrio": {"tipo": "Vidrio", "numero": None, "reciclaje": "comun"},
+        "caja_carton": {"tipo": "Papel", "numero": None, "reciclaje": "comun"},
+        "periodico": {"tipo": "Papel", "numero": None, "reciclaje": "comun"},
+
+        "tubo_pvc": {"tipo": "Plástico", "numero": 3, "reciclaje": "no_reciclable"},
+        "cortina_plastico": {"tipo": "Plástico", "numero": 3, "reciclaje": "no_reciclable"},
+        "vaso_unicel": {"tipo": "Plástico", "numero": 6, "reciclaje": "no_reciclable"},
+        "bandeja_carne_unicel": {"tipo": "Plástico", "numero": 6, "reciclaje": "no_reciclable"},
+        "cd": {"tipo": "Plástico", "numero": 7, "reciclaje": "no_reciclable"},
+
+        "bolsa_plastico_fino": {"tipo": "Plástico", "numero": 4, "reciclaje": "especial"},
+        "film_transparente": {"tipo": "Plástico", "numero": 4, "reciclaje": "especial"},
+    }
+
+
+materiales = cargar_materiales()
+
+#FUNCIONES
+def identificar_material():
+    print("\n--- IDENTIFICAR MATERIAL ---")
+    nombre = input("Escribe el material: ").lower().strip()
+
+    # búsqueda simple flexible
+    matches = [k for k in materiales if nombre in k]
+
+    if not matches:
+        print("No encontré ese material. Sí, tu basura también es confusa.")
+        return
+
+    print("\nCoincidencias:")
+    for i, m in enumerate(matches):
+        print(f"{i + 1}. {m}")
+
+    try:
+        seleccion = int(input("\nElige un número: ")) - 1
+        key = matches[seleccion]
+    except:
+        print("Selección inválida. clásico humano.")
+        return
+
+    info = materiales[key]
+
+    print(f"\nMaterial: {key}")
+    print(f"Tipo: {info['tipo']}")
+
+    if info["numero"]:
+        print(f"Número plástico: {info['numero']}")
+
+    if info["reciclaje"] == "comun":
+        print(" reciclable normal. no es tan difícil esto.")
+    elif info["reciclaje"] == "no_reciclable":
+        print(" no reciclable. directo a basura.")
+    else:
+        print(" especial. esto requiere salir de tu zona de confort logística.")
+
+
+def registrar_reciclaje():
+    print("\n--- REGISTRO ---")
+
+    tipo = input("Tipo (plastico/vidrio/papel/metal): ").lower().strip()
+    cantidad = float(input("Cantidad: "))
+    unidad = input("Unidad (kg/unidades): ").lower().strip()
+
+    registro = {
+        "fecha": datetime.date.today().isoformat(),
+        "tipo": tipo,
+        "cantidad": cantidad,
+        "unidad": unidad
+    }
+
+    data = []
+
+    if os.path.exists(ARCHIVO_REGISTRO):
+        with open(ARCHIVO_REGISTRO, "r") as f:
+            data = json.load(f)
+
+    data.append(registro)
+
+    with open(ARCHIVO_REGISTRO, "w") as f:
+        json.dump(data, f, indent=2)
+
+    print("✔ registrado. tu impacto existe, aunque sea pequeño.")
+
+
+def ver_estadisticas():
+    print("\n--- ESTADÍSTICAS ---")
+
+    if not os.path.exists(ARCHIVO_REGISTRO):
+        print("no hay datos. aún no haces nada memorable en reciclaje.")
+        return
+
+    with open(ARCHIVO_REGISTRO, "r") as f:
+        data = json.load(f)
+
+    resumen = {}
+
+    for r in data:
+        t = r["tipo"]
+        resumen[t] = resumen.get(t, 0) + r["cantidad"]
+
+    print(f"registros totales: {len(data)}")
+
+    for k, v in resumen.items():
+        print(f"- {k}: {v}")
+
+    print(f"\núltimo registro: {data[-1]['fecha']}")
+
+
+def recordatorio():
+    print("\n--- RECORDATORIO ---")
+
+    if not os.path.exists(ARCHIVO_REGISTRO):
+        print("no has registrado nada. impacto ambiental en pausa.")
+        return
+
+    with open(ARCHIVO_REGISTRO, "r") as f:
+        data = json.load(f)
+
+    if not data:
+        print("registro vacío.")
+        return
+
+    ultima = datetime.date.fromisoformat(data[-1]["fecha"])
+    dias = (datetime.date.today() - ultima).days
+
+    if dias >= 14:
+        print(" ya pasaron más de 2 semanas. tu reciclaje está en modo abandono.")
+    else:
+        print(f" último registro hace {dias} días. consistente, por ahora =).")
+
+
+def consejo_del_dia():
+    consejos = [
+        "lava los envases antes de reciclarlos.",
+        "aplastar botellas ahorra espacio y paciencia.",
+        "las tapas pueden reciclarse dentro de botellas.",
+        "el unicel es mala idea en general.",
+        "reduce antes de reciclar.",
+        "el vidrio dura siglos. úsalo con respeto.",
+    ]
+
+    print("\n--- CONSEJO ---")
+    print(random.choice(consejos))
+
+
+def menu():
+    print("\n======================")
+    print(" RECICLAJE APP")
+    print("======================")
+    print("1. identificar material")
+    print("2. registrar reciclaje")
+    print("3. ver estadísticas")
+    print("4. recordatorio")
+    print("5. consejo")
+    print("6. salir")
+
+    return input("\nopción: ").strip()
+
+
+#MAIN
+print("iniciando sistema de reciclaje personal... porque alguien tiene que hacerlo.")
+
+while True:
+    op = menu()
+
+    if op == "1":
+        identificar_material()
+    elif op == "2":
+        registrar_reciclaje()
+    elif op == "3":
+        ver_estadisticas()
+    elif op == "4":
+        recordatorio()
+    elif op == "5":
+        consejo_del_dia()
+    elif op == "6":
+        print("saliste. el planeta sigue ahí, por ahora.")
+        break
+    else:
+        print("opción inválida. intenta de nuevo, humano.")
